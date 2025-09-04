@@ -1,0 +1,7 @@
+sample:
+  description: c++ coroutine scheduler
+  name: cosched
+common:
+  integration_platforms:
+    - native_sim
+  harness: console
