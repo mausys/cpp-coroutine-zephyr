@@ -183,12 +183,9 @@ struct Task
 
   ~Task()
   {
-    if (handle_ == nullptr)
-      return;
-
-    if (handle_.done())
-      handle_.destroy();
+    done();
   }
+
 
   bool done() {
     if (handle_ == nullptr)
@@ -209,14 +206,20 @@ struct Task
   bool resume()
   {
     ready_ = false;
-    if (!handle_.done()) {
-      handle_();
-      std::exception_ptr exception = std::exchange(handle_.promise().exception_, nullptr);
-      if (exception)
-        std::rethrow_exception(exception);
-    }
 
-    return !handle_.done();
+    if (done())
+      return false;
+
+    handle_();
+
+    std::exception_ptr exception = std::exchange(handle_.promise().exception_, nullptr);
+
+    bool ret = !done();
+
+    if (exception)
+      std::rethrow_exception(exception);
+
+    return ret;
   }
 
   bool setReady() {
@@ -228,13 +231,11 @@ struct Task
   UId uid_ = kUIdInvalid;
   TaskId parent_ = TaskIdInvalid;
 
-
 private:
-  bool ready_ = {};
+  bool ready_ = false;
   promise_type::coro_handle handle_ = nullptr;
-
-
 };
+
 
 template <typename T>
 class Scheduler {
